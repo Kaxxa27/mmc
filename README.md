@@ -546,6 +546,7 @@ Every variable is validated at startup.
 | `RATE_LIMIT_PER_MINUTE`, `OTP_*`                                 | General and sign-in limits                                               |
 | `JOBS_ENABLED`, `SWAGGER_ENABLED`, `TRUST_PROXY`                 | Scheduler, API docs, client IPs behind a proxy                           |
 | `DEV_TOOLS_ENABLED`                                              | `/dev/*` helpers. On in development, **cannot** be enabled in production |
+| `CRON_SECRET`                                                    | Protects `GET /health/keep-alive` (sent by Vercel Cron)                  |
 | `DEMO_ACCOUNTS_ENABLED`                                          | Shared demo accounts on the sign-in page (off by default)                |
 | `API_URL` _(web)_                                                | Where the web BFF forwards requests                                      |
 
@@ -606,6 +607,10 @@ What is specific to the serverless setup:
 - **One function for the whole API.** `apps/api/api/index.js` loads `dist/serverless.js`, which
   boots Nest once per instance. `vercel.json` rewrites every path to it.
 - **No scheduler.** `ScheduleModule` is skipped when `VERCEL` is set. Keep `JOBS_ENABLED=false`.
+- **Keep-alive cron.** Supabase Free pauses a project after about a week without database activity.
+  Vercel Cron (`crons` in `apps/api/vercel.json`) calls `GET /api/v1/health/keep-alive` every
+  5 days, which does a real read and write. Set `CRON_SECRET` on the API project: Vercel sends it
+  as a Bearer token and the endpoint rejects other callers.
 - **Swagger UI assets** are copied into `public/api/docs` at build time
   (`scripts/copy-swagger-assets.mjs`), because the function bundle does not include them.
 - **Posters through the web domain.** `image.tmdb.org` is blocked by some ISPs and mobile carriers.

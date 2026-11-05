@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { RateLimitService } from '../rate-limit/rate-limit.service.js';
 import { sql } from 'drizzle-orm';
 import { AppConfig } from '../config/app-config.js';
 import { InjectDb } from '../database/database.constants.js';
@@ -22,6 +23,7 @@ export class HealthService {
   constructor(
     @InjectDb() private readonly db: Database,
     private readonly config: AppConfig,
+    private readonly rateLimit: RateLimitService,
   ) {
     this.register('database', async () => {
       await this.db.execute(sql`select 1`);
@@ -39,6 +41,18 @@ export class HealthService {
   /** Lets other modules (e.g. TMDB) contribute a dependency check. */
   register(name: string, probe: Probe): void {
     this.probes.set(name, probe);
+  }
+
+  /**
+   * Real database work (a read and a write) so the Supabase Free plan sees activity and does not
+   * pause the project after a week without traffic. Called by Vercel Cron (apps/api/vercel.json).
+   */
+  async keepAlive(): Promise<{ ok: true; movies: number; at: string }> {
+    const result = await this.db.execute<{ count: number }>(
+      sql`select count(*)::int as count from movies`,
+    );
+    await this.rateLimit.consume('keep-alive', Number.MAX_SAFE_INTEGER, 60);
+    return { ok: true, movies: result.rows[0]?.count ?? 0, at: new Date().toISOString() };
   }
 
   async check(): Promise<HealthReport> {

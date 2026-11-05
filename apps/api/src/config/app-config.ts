@@ -74,6 +74,7 @@ export class AppConfig {
   readonly jobsEnabled: boolean;
   readonly devTools: { enabled: boolean; mailpitUrl: string };
   readonly demoAccounts: { enabled: boolean };
+  readonly cronSecret: string | undefined;
 
   constructor(env: Env) {
     this.nodeEnv = env.NODE_ENV;
@@ -138,6 +139,7 @@ export class AppConfig {
       mailpitUrl: env.MAILPIT_URL.replace(/\/+$/, ''),
     };
     this.demoAccounts = { enabled: env.DEMO_ACCOUNTS_ENABLED ?? false };
+    this.cronSecret = env.CRON_SECRET;
   }
 
   get isProduction(): boolean {
