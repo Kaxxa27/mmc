@@ -620,7 +620,7 @@ export interface AppConfigView {
     imageBaseUrl: string;
   };
   defaults: { language: string; region: string };
-  features: { devTools: boolean };
+  features: { devTools: boolean; demoAccounts?: boolean };
   certificationScales: Record<string, string[]>;
 }
 

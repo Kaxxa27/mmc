@@ -40,6 +40,11 @@ export const envSchema = z
     JOBS_ENABLED: booleanFlag.default(true),
     /** Developer endpoints under /api/v1/dev (quick sign-in, mailbox, demo data). */
     DEV_TOOLS_ENABLED: optionalFlag,
+    /**
+     * Shared demo accounts (Anna, Ben, Chloe) on the sign-in page, without an email code. Safe to
+     * enable in production for test deployments: only these fixed accounts are reachable.
+     */
+    DEMO_ACCOUNTS_ENABLED: optionalFlag,
     MAILPIT_URL: z.url().default('http://127.0.0.1:54324'),
     RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(300),
 

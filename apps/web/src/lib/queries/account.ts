@@ -117,6 +117,11 @@ export function devSignIn(email: string) {
   return api.post<SessionInfo>('/dev/sign-in', { email });
 }
 
+/** Shared demo accounts (enabled with DEMO_ACCOUNTS_ENABLED on the API). */
+export function demoSignIn(member: 'anna' | 'ben' | 'chloe') {
+  return api.post<SessionInfo>('/demo/sign-in', { member });
+}
+
 export function devDemo() {
   return api.post<DemoWorld>('/dev/demo', {});
 }
