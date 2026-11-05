@@ -13,7 +13,7 @@ export interface RateLimitResult {
 /**
  * Fixed-window rate limiting stored in Postgres, so limits survive restarts and are shared by
  * every API instance. Used for sensitive endpoints (sign-in codes); general traffic is limited
- * in memory by @nestjs/throttler.
+ * in memory by RequestThrottleGuard.
  */
 @Injectable()
 export class RateLimitService {
