@@ -10,6 +10,8 @@ out/
 next-env.d.ts
 playwright-report/
 test-results/
+# Swagger UI assets copied at build time for Vercel (apps/api/scripts/copy-swagger-assets.mjs)
+apps/api/public/api/
 
 # Environment files (never commit secrets)
 .env
