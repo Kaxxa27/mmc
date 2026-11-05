@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsEmail, IsInt, IsOptional, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsEmail, IsIn, IsInt, IsOptional, Matches, Max, MaxLength, Min } from 'class-validator';
+import { DEMO_MEMBER_KEYS, type DemoMemberKey } from '../../auth/demo-accounts.js';
+
+export class DemoSignInDto {
+  /** Which shared demo user to sign in as. */
+  @IsIn(DEMO_MEMBER_KEYS)
+  member: DemoMemberKey;
+}
 
 export class DevSignInDto {
   /**

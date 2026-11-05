@@ -1,5 +1,6 @@
 import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
 import { createTransport, type Transporter } from 'nodemailer';
+import { isSharedDemoEmail } from '../auth/demo-accounts.js';
 import { AppConfig } from '../config/app-config.js';
 import { type EmailContent, renderEmail } from './email-layout.js';
 
@@ -24,6 +25,8 @@ export class MailService implements OnModuleDestroy {
 
   /** Best effort: returns false (and logs) instead of throwing when delivery fails. */
   async send(to: string, subject: string, content: EmailContent): Promise<boolean> {
+    // The shared demo accounts use example.com addresses, which never receive mail.
+    if (isSharedDemoEmail(to)) return false;
     const { html, text } = renderEmail(content);
     try {
       await this.transporter.sendMail({ from: this.config.mail.from, to, subject, html, text });

@@ -57,7 +57,10 @@ export class MetaController {
       },
       defaults: { language: defaultLanguage, region: defaultRegion },
       /** Optional features clients can offer (developer tools exist only in development). */
-      features: { devTools: this.config.devTools.enabled },
+      features: {
+        devTools: this.config.devTools.enabled,
+        demoAccounts: this.config.demoAccounts.enabled,
+      },
       enums: {
         movieStatuses: MOVIE_STATUSES,
         groupRoles: GROUP_ROLES,

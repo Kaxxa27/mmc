@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, FlaskConical, Mail, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, FlaskConical, Mail, Sparkles, UserRound, Users } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -8,15 +8,15 @@ import { Field, Input } from '@/components/ui/form';
 import { Card } from '@/components/ui/misc';
 import { api, ApiError, errorMessage } from '@/lib/api/client';
 import type { OtpRequestResult } from '@/lib/api/types';
-import { devDemo, devSignIn, requestOtp, verifyOtp } from '@/lib/queries/account';
+import { demoSignIn, devDemo, devSignIn, requestOtp, verifyOtp } from '@/lib/queries/account';
 import { useAppConfig } from '@/lib/queries/core';
 import { useFinishSignIn } from './use-finish-sign-in';
 
 const DEMO_USERS = [
-  { name: 'Anna', email: 'anna.demo@example.com' },
-  { name: 'Ben', email: 'ben.demo@example.com' },
-  { name: 'Chloe', email: 'chloe.demo@example.com' },
-];
+  { key: 'anna', name: 'Anna', email: 'anna.demo@example.com' },
+  { key: 'ben', name: 'Ben', email: 'ben.demo@example.com' },
+  { key: 'chloe', name: 'Chloe', email: 'chloe.demo@example.com' },
+] as const;
 
 /** "Resend" link that unlocks after the API's cooldown (remounted for every new code). */
 function ResendButton({ seconds, onResend }: { seconds: number; onResend: () => void }) {
@@ -181,6 +181,60 @@ function DevTools({
   );
 }
 
+/** Shared demo accounts for test deployments (DEMO_ACCOUNTS_ENABLED on the API). */
+function DemoAccounts({
+  onSignedIn,
+}: {
+  onSignedIn: (session: { needsOnboarding: boolean }) => void;
+}) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function signIn(member: (typeof DEMO_USERS)[number]['key']) {
+    setBusy(member);
+    setMessage(null);
+    try {
+      onSignedIn(await demoSignIn(member));
+    } catch (error) {
+      setMessage(friendlyError(error));
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Card className="mt-4 p-4">
+      <p className="flex items-center gap-2 text-sm font-semibold">
+        <UserRound className="size-4 text-primary" aria-hidden />
+        Try a demo account
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        A ready-made family with a shared catalog and a movie night. No email needed. Demo accounts
+        are shared with other visitors, so do not save anything private there.
+      </p>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {DEMO_USERS.map((user) => (
+          <Button
+            key={user.key}
+            variant="outline"
+            size="sm"
+            loading={busy === user.key}
+            disabled={busy !== null}
+            onClick={() => void signIn(user.key)}
+          >
+            {user.name}
+          </Button>
+        ))}
+      </div>
+      {busy ? (
+        <p className="mt-2 text-xs text-muted-foreground">
+          The first sign-in prepares the demo data and can take a few seconds.
+        </p>
+      ) : null}
+      {message ? <p className="mt-2 text-xs text-red-600 dark:text-red-400">{message}</p> : null}
+    </Card>
+  );
+}
+
 export function SignInView() {
   const searchParams = useSearchParams();
   const next = searchParams.get('next');
@@ -195,6 +249,7 @@ export function SignInView() {
   const [pending, setPending] = useState(false);
   const codeInput = useRef<HTMLInputElement>(null);
   const devTools = config?.features.devTools ?? false;
+  const demoAccounts = config?.features.demoAccounts ?? false;
 
   async function sendCode(event?: FormEvent) {
     event?.preventDefault();
@@ -329,6 +384,7 @@ export function SignInView() {
           </form>
         )}
       </Card>
+      {demoAccounts && !devTools && !otp ? <DemoAccounts onSignedIn={finish} /> : null}
       {devTools ? (
         <DevTools
           email={otp?.email ?? email.trim()}

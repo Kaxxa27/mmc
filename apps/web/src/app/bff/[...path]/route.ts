@@ -18,7 +18,12 @@ import { SESSION_HINT_COOKIE } from '@/lib/session-hint';
 const API_URL = (process.env.API_URL ?? 'http://127.0.0.1:3001').replace(/\/+$/, '');
 
 /** Endpoints that return a session: their tokens become cookies. */
-const SESSION_ENDPOINTS = new Set(['auth/otp/verify', 'auth/magic-link/verify', 'dev/sign-in']);
+const SESSION_ENDPOINTS = new Set([
+  'auth/otp/verify',
+  'auth/magic-link/verify',
+  'dev/sign-in',
+  'demo/sign-in',
+]);
 const PASSED_RESPONSE_HEADERS = [
   'content-type',
   'content-disposition',

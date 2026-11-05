@@ -73,6 +73,7 @@ export class AppConfig {
   readonly invitations: { ttlDays: number };
   readonly jobsEnabled: boolean;
   readonly devTools: { enabled: boolean; mailpitUrl: string };
+  readonly demoAccounts: { enabled: boolean };
 
   constructor(env: Env) {
     this.nodeEnv = env.NODE_ENV;
@@ -136,6 +137,7 @@ export class AppConfig {
       enabled: env.DEV_TOOLS_ENABLED ?? env.NODE_ENV === 'development',
       mailpitUrl: env.MAILPIT_URL.replace(/\/+$/, ''),
     };
+    this.demoAccounts = { enabled: env.DEMO_ACCOUNTS_ENABLED ?? false };
   }
 
   get isProduction(): boolean {

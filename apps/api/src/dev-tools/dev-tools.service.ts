@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { AuthService } from '../auth/auth.service.js';
+import { DEMO_NAMESPACE, type DemoMemberKey, demoEmail } from '../auth/demo-accounts.js';
 import type { AuthUser, ClientContext } from '../auth/auth.types.js';
 import type { AuthSessionDto } from '../auth/dto/auth.dto.js';
-import { serviceUnavailable } from '../common/errors.js';
+import { serviceUnavailable, tooManyRequests } from '../common/errors.js';
 import { CollectionsService } from '../collections/collections.service.js';
 import { AppConfig } from '../config/app-config.js';
 import { InjectDb } from '../database/database.constants.js';
@@ -15,6 +16,7 @@ import { InvitationsService } from '../groups/invitations.service.js';
 import { LibraryService } from '../library/library.service.js';
 import { MovieNightsService } from '../movie-nights/movie-nights.service.js';
 import { ProfilesService } from '../profiles/profiles.service.js';
+import { RateLimitService } from '../rate-limit/rate-limit.service.js';
 import type { DemoWorldDto, MailboxDto, MailboxMessageDto } from './dto/dev-tools.dto.js';
 
 const DEMO_GROUP = 'Demo Family';
@@ -58,6 +60,7 @@ export class DevToolsService {
     private readonly library: LibraryService,
     private readonly collections: CollectionsService,
     private readonly movieNights: MovieNightsService,
+    private readonly rateLimit: RateLimitService,
   ) {}
 
   signIn(email: string, client: ClientContext): Promise<AuthSessionDto> {
@@ -116,11 +119,15 @@ export class DevToolsService {
    * statuses and group ratings, a movie night in the voting phase and a shared collection.
    * Created once; later calls only sign the members in again.
    */
-  async createDemo(client: ClientContext, namespace = 'demo'): Promise<DemoWorldDto> {
+  async createDemo(
+    client: ClientContext,
+    namespace = DEMO_NAMESPACE,
+    method: 'dev' | 'demo' = 'dev',
+  ): Promise<DemoWorldDto> {
     const members = [];
     for (const member of DEMO_MEMBERS) {
-      const email = `${member.name.toLowerCase()}.${namespace}@example.com`;
-      const session = await this.auth.devSignIn(email, client);
+      const email = demoEmail(member.name, namespace);
+      const session = await this.auth.signInWithoutCode(email, client, method);
       await this.profiles.update(
         session.user.id,
         { firstName: member.name, lastName: 'Demo', favoriteGenreIds: [...member.genres] },
@@ -176,6 +183,34 @@ export class DevToolsService {
         'GET /api/v1/me/notifications',
       ],
     };
+  }
+
+  /**
+   * Signs in to one of the shared demo accounts (`DEMO_ACCOUNTS_ENABLED`). The demo family is
+   * built on the first sign-in (and rebuilt if it was deleted).
+   */
+  async demoSignIn(member: DemoMemberKey, client: ClientContext): Promise<AuthSessionDto> {
+    // Global budget: requests reach the API through the web server, so per-IP keys would be shared.
+    const limit = await this.rateLimit.consume('demo-sign-in', 120, 600);
+    if (!limit.allowed) {
+      throw tooManyRequests(
+        'DEMO_RATE_LIMITED',
+        'Too many demo sign-ins. Try again in a few minutes.',
+        limit.retryAfterSeconds,
+      );
+    }
+    if (!(await this.sharedDemoExists())) await this.createDemo(client, DEMO_NAMESPACE, 'demo');
+    return this.auth.signInWithoutCode(demoEmail(member), client, 'demo');
+  }
+
+  private async sharedDemoExists(): Promise<boolean> {
+    const result = await this.db.execute<{ id: string }>(sql`
+      select g.id from groups g
+      join auth.users u on u.id = g.owner_id
+      where u.email = ${demoEmail('anna')} and g.name = ${DEMO_GROUP} and g.archived_at is null
+      limit 1
+    `);
+    return result.rows.length > 0;
   }
 
   private async buildDemo(

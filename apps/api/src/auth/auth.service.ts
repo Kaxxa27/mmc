@@ -28,6 +28,7 @@ import type {
 } from './dto/auth.dto.js';
 import { OtpProtectionService } from './otp-protection.service.js';
 import { describeUserAgent } from './user-agent.js';
+import { isSharedDemoEmail } from './demo-accounts.js';
 
 const OTP_LENGTH = 6;
 const SIGN_IN_ACTIONS = ['auth.sign_up', 'auth.sign_in'];
@@ -35,7 +36,9 @@ const SIGN_IN_METHODS = {
   otp: 'an email code',
   magic_link: 'a magic link',
   dev: 'the developer quick sign-in',
+  demo: 'the demo account sign-in',
 } as const;
+type SignInMethod = keyof typeof SIGN_IN_METHODS;
 
 /**
  * Passwordless authentication on top of Supabase Auth. The API is the only client of Supabase
@@ -133,9 +136,25 @@ export class AuthService {
    * The account is created or confirmed with the Supabase admin API, then a one-time magic link
    * is generated and verified, so the session is a regular Supabase session.
    */
-  async devSignIn(rawEmail: string, client: ClientContext): Promise<AuthSessionDto> {
-    if (!this.config.devTools.enabled) throw notFound('NOT_FOUND', 'Not found.');
+  devSignIn(rawEmail: string, client: ClientContext): Promise<AuthSessionDto> {
+    return this.signInWithoutCode(rawEmail, client, 'dev');
+  }
+
+  /**
+   * Signs in without an email code: any address with developer tools (`'dev'`), or only the
+   * shared demo accounts when `DEMO_ACCOUNTS_ENABLED` (`'demo'`). Creates the account if needed.
+   */
+  async signInWithoutCode(
+    rawEmail: string,
+    client: ClientContext,
+    method: 'dev' | 'demo',
+  ): Promise<AuthSessionDto> {
     const email = normalizeEmail(rawEmail);
+    const allowed =
+      method === 'dev'
+        ? this.config.devTools.enabled
+        : this.config.demoAccounts.enabled && isSharedDemoEmail(email);
+    if (!allowed) throw notFound('NOT_FOUND', 'Not found.');
     const admin = this.supabase.admin.auth.admin;
 
     const existing = await this.db.execute<{ id: string; email_confirmed_at: string | null }>(
@@ -163,7 +182,7 @@ export class AuthService {
     if (!data.session || !data.user) {
       throw serviceUnavailable('AUTH_UNAVAILABLE', 'Supabase Auth returned no session.');
     }
-    return this.completeSignIn(data.session, data.user, client, 'dev');
+    return this.completeSignIn(data.session, data.user, client, method);
   }
 
   async verifyMagicLink(tokenHash: string, client: ClientContext): Promise<AuthSessionDto> {
@@ -207,8 +226,11 @@ export class AuthService {
 
   async listSessions(user: AuthUser): Promise<ActiveSessionDto[]> {
     const sessions = await this.sessions.list(user.id);
+    // Visitors share the demo accounts, so they must not see each other's IP addresses.
+    const hideIp = isSharedDemoEmail(user.email);
     return sessions.map((session) => ({
       ...session,
+      ...(hideIp ? { ipAddress: null } : {}),
       current: session.id === user.sessionId,
       device: describeUserAgent(session.userAgent),
     }));
@@ -231,7 +253,7 @@ export class AuthService {
     session: Session,
     user: User,
     client: ClientContext,
-    method: 'otp' | 'magic_link' | 'dev',
+    method: SignInMethod,
   ): Promise<AuthSessionDto> {
     const email = normalizeEmail(user.email ?? '');
     // Normally created by the auth.users trigger; this keeps sign-in working if it was not.
@@ -247,7 +269,8 @@ export class AuthService {
       metadata: { method, userAgent: client.userAgent },
       ipAddress: client.ip,
     });
-    if (!isNewAccount) {
+    // Shared demo accounts skip it: it would show one visitor's IP and device to the others.
+    if (!isNewAccount && method !== 'demo') {
       await this.notifications.notify({
         recipientIds: [user.id],
         type: 'security_new_sign_in',

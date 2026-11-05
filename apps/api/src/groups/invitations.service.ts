@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { and, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { AuditService } from '../audit/audit.service.js';
 import type { AuthUser } from '../auth/auth.types.js';
+import { isSharedDemoEmail } from '../auth/demo-accounts.js';
 import { conflict, forbidden, gone, notFound } from '../common/errors.js';
 import { normalizeEmail, randomToken, sha256 } from '../common/utils/crypto.js';
 import { addDays } from '../common/utils/dates.js';
@@ -12,6 +13,7 @@ import {
   groupInvitations,
   groupMembers,
   groups,
+  profiles,
   type GroupKind,
   type GroupRole,
   type InvitationKind,
@@ -109,6 +111,17 @@ export class InvitationsService {
     const membership = await this.access.require(groupId, actorId, {
       minRole: dto.role === 'admin' ? 'owner' : 'admin',
     });
+    // Anyone can use the shared demo accounts; they must not be a way to send email to strangers.
+    const [actor] = await this.db
+      .select({ email: profiles.email })
+      .from(profiles)
+      .where(eq(profiles.id, actorId));
+    if (isSharedDemoEmail(actor?.email)) {
+      throw forbidden(
+        'DEMO_ACCOUNT_RESTRICTED',
+        'Demo accounts cannot send email invitations. Create an invite link instead.',
+      );
+    }
     const email = normalizeEmail(dto.email);
     const existingUserId = await this.directory.findIdByEmail(email);
     if (existingUserId && (await this.access.findMembership(groupId, existingUserId))) {
