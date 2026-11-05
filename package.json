@@ -1,0 +1,39 @@
+{
+  "name": "my-movie-catalog",
+  "version": "0.1.0",
+  "private": true,
+  "description": "My Movie Catalog — personal and shared movie discovery, collections and movie-night planning.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "setup": "npm run supabase:start && npm run env:sync",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "db:reset": "supabase db reset",
+    "env:sync": "node scripts/sync-env.mjs",
+    "dev": "concurrently --names api,web --prefix-colors blue,magenta --kill-others-on-fail \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run start:dev --workspace @my-movie-catalog/api",
+    "dev:web": "npm run dev --workspace @my-movie-catalog/web",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run test:e2e --workspace @my-movie-catalog/api",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.5",
+    "eslint": "^10.14.0",
+    "prettier": "^3.9.10",
+    "supabase": "^2.122.1"
+  }
+}

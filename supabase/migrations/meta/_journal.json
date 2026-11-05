@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793811263163,
+      "tag": "20261104165423_init_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793811295773,
+      "tag": "20261104165455_security_triggers_reference_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793813185742,
+      "tag": "20261104172625_notification_group_role_changed",
+      "breakpoints": true
+    }
+  ]
+}
