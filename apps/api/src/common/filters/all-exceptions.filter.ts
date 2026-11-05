@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { ThrottlerException } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { findPgError, PG_ERROR } from '../../database/pg-errors.js';
 import { AppException, type ApiErrorBody } from '../errors.js';
@@ -59,18 +58,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
           ...(exception.details === undefined ? {} : { details: exception.details }),
         },
         headers: exception.headers ?? {},
-      };
-    }
-
-    if (exception instanceof ThrottlerException) {
-      return {
-        body: {
-          statusCode: 429,
-          error: this.reason(429),
-          code: 'RATE_LIMITED',
-          message: 'Too many requests. Please slow down.',
-        },
-        headers: {},
       };
     }
 

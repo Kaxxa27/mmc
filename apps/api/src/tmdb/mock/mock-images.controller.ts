@@ -1,10 +1,10 @@
 import { Controller, Get, Param, Res } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { SkipThrottle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { Public } from '../../auth/auth.decorators.js';
 import { notFound } from '../../common/errors.js';
 import { AppConfig } from '../../config/app-config.js';
+import { SkipThrottle } from '../../rate-limit/request-throttle.guard.js';
 import { MOCK_IMAGE_KINDS, type MockImageKind, renderMockImage } from './mock-images.js';
 import { MockTmdbService } from './mock-tmdb.service.js';
 

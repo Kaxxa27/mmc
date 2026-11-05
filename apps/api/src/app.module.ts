@@ -1,13 +1,11 @@
 import { type MiddlewareConsumer, Module, type NestModule, ValidationPipe } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './audit/audit.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CollectionsModule } from './collections/collections.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { RequestLoggerMiddleware } from './common/request-logger.middleware.js';
-import { AppConfig } from './config/app-config.js';
 import { ConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { DevToolsModule } from './dev-tools/dev-tools.module.js';
@@ -24,6 +22,7 @@ import { MovieNightsModule } from './movie-nights/movie-nights.module.js';
 import { MoviesModule } from './movies/movies.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { RateLimitModule } from './rate-limit/rate-limit.module.js';
+import { RequestThrottleGuard } from './rate-limit/request-throttle.guard.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 import { SupabaseModule } from './supabase/supabase.module.js';
 import { TmdbModule } from './tmdb/tmdb.module.js';
@@ -36,12 +35,6 @@ import { TmdbModule } from './tmdb/tmdb.module.js';
     MailModule,
     AuditModule,
     RateLimitModule,
-    ThrottlerModule.forRootAsync({
-      inject: [AppConfig],
-      useFactory: (config: AppConfig) => [
-        { name: 'default', ttl: 60_000, limit: config.http.rateLimitPerMinute },
-      ],
-    }),
     // Serverless functions (Vercel) do not stay alive between requests, so jobs are not scheduled there.
     ...(process.env.VERCEL ? [] : [ScheduleModule.forRoot()]),
     HealthModule,
@@ -62,7 +55,7 @@ import { TmdbModule } from './tmdb/tmdb.module.js';
     DevToolsModule,
   ],
   providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: RequestThrottleGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     {
       provide: APP_PIPE,
