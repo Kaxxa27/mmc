@@ -45,6 +45,11 @@ export const envSchema = z
      * enable in production for test deployments: only these fixed accounts are reachable.
      */
     DEMO_ACCOUNTS_ENABLED: optionalFlag,
+    /**
+     * Secret for GET /api/v1/health/keep-alive. Vercel Cron sends it as `Authorization: Bearer
+     * <CRON_SECRET>` when the variable is set on the project.
+     */
+    CRON_SECRET: optionalSecret,
     MAILPIT_URL: z.url().default('http://127.0.0.1:54324'),
     RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(300),
 

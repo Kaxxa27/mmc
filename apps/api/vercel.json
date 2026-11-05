@@ -3,5 +3,16 @@
   "framework": null,
   "buildCommand": "npm run build && node scripts/copy-swagger-assets.mjs",
   "outputDirectory": "public",
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/v1/health/keep-alive",
+      "schedule": "0 6 */5 * *"
+    }
+  ]
 }
