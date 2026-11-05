@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
       '*.css': { loaders: ['@tailwindcss/turbopack'], as: '*.css' },
     },
   },
+  // TMDB images through this domain: image.tmdb.org is blocked by some networks/ISPs, so the
+  // browser loads /tmdb-images/... from the web app and the server fetches it from TMDB.
+  // Enable by setting TMDB_IMAGE_BASE_URL=<web-url>/tmdb-images on the API.
+  async rewrites() {
+    return [{ source: '/tmdb-images/:path*', destination: 'https://image.tmdb.org/t/p/:path*' }];
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
