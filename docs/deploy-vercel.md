@@ -169,6 +169,8 @@ SUPABASE_JWT_SECRET=
 SUPABASE_STORAGE_BUCKET=media
 
 TMDB_API_READ_ACCESS_TOKEN=eyJ...
+# Картинки TMDB через домен веба (image.tmdb.org заблокирован у части провайдеров)
+TMDB_IMAGE_BASE_URL=https://my-movie-catalog-web.vercel.app/tmdb-images
 
 SMTP_HOST=smtp.resend.com
 SMTP_PORT=465
@@ -188,6 +190,11 @@ RATE_LIMIT_PER_MINUTE=3000
 несколько IP, поэтому локальные лимиты (30 запросов кода в час на IP) быстро сработали бы для всех
 сразу. Лимиты на один email (`OTP_REQUESTS_PER_HOUR_PER_EMAIL`, попытки ввода кода) продолжают
 работать как прежде.
+
+Зачем `TMDB_IMAGE_BASE_URL`: постеры грузит браузер пользователя, а `image.tmdb.org` у части
+провайдеров (особенно мобильных) заблокирован, и картинки не показываются. Веб проксирует
+`/tmdb-images/*` на `https://image.tmdb.org/t/p/*` (`apps/web/next.config.ts`), поэтому браузеру
+нужен только домен веба. Подставьте сюда реальный адрес веб-проекта.
 
 6. **Deploy**.
 7. Проверка: `https://my-movie-catalog-api.vercel.app/api/v1/health` должен вернуть `200`, а
