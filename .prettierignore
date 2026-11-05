@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+package-lock.json
+supabase/.temp
+supabase/.branches
+supabase/migrations/meta
+.next
+out
+next-env.d.ts
+playwright-report
+test-results
