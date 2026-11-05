@@ -142,7 +142,7 @@ Resend из шага 2 (Sender email — ваш отправитель, Sender n
 
 ## 4. API на Vercel (`apps/api`)
 
-1. vercel.com → **Add New… → Project** → импортируйте `Kaxxa27/test-claude`.
+1. vercel.com → **Add New… → Project** → импортируйте `Kaxxa27/mmc`.
 2. **Project Name**: `my-movie-catalog-api`.
 3. **Root Directory**: `apps/api` (кнопка _Edit_).
 4. **Framework Preset**: `Other`. Build Command / Output Directory не трогайте — они заданы в
